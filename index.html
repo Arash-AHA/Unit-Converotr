@@ -1,507 +1,747 @@
-<!DOCTYPE html>
+// Helper function to save custom conversions to localStorage
+        function saveCustomConversions() {
+            localStorage.setItem('customConversions', JSON.stringify(customConversions));
+            updateConversionsList();
+            updateUnitSuggestions();
+        }<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Unit Converter</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <script src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+        
+        body {
+            background-color: #f3f4f6;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+        }
+        
+        .container {
+            background-color: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 1.5rem;
+            width: 100%;
+            max-width: 28rem;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #1f2937;
+        }
+        
+        .input-group {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .input-container {
+            width: 50%;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #4b5563;
+        }
+        
+        input {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.25rem;
+            font-size: 0.9rem;
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+        
+        .suggestions {
+            display: flex;
+            flex-wrap: wrap;
+            margin-top: 0.25rem;
+        }
+        
+        .suggestion {
+            background-color: #e5e7eb;
+            color: #4b5563;
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            margin-right: 0.25rem;
+            margin-bottom: 0.25rem;
+            border-radius: 0.25rem;
+            cursor: pointer;
+        }
+        
+        .suggestion:hover {
+            background-color: #d1d5db;
+        }
+        
+        .value-container {
+            margin-bottom: 1rem;
+        }
+        
+        .error {
+            color: #ef4444;
+            font-size: 0.8rem;
+            margin-top: 0.25rem;
+        }
+        
+        button {
+            width: 100%;
+            padding: 0.5rem;
+            margin-bottom: 1rem;
+            font-weight: 500;
+            color: white;
+            border: none;
+            border-radius: 0.25rem;
+            cursor: pointer;
+        }
+        
+        button:focus {
+            outline: none;
+        }
+        
+        .convert-btn {
+            background-color: #3b82f6;
+        }
+        
+        .convert-btn:hover {
+            background-color: #2563eb;
+        }
+        
+        .add-btn {
+            background-color: #10b981;
+        }
+        
+        .add-btn:hover {
+            background-color: #059669;
+        }
+        
+        .result {
+            background-color: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.25rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .result-value {
+            font-weight: bold;
+            font-size: 1.25rem;
+            margin-top: 0.5rem;
+        }
+        
+        .add-form {
+            background-color: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.25rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .add-form-inputs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+        }
+        
+        .add-form-inputs input {
+            width: 100%;
+            font-size: 0.8rem;
+        }
+        
+        .add-form-help {
+            font-size: 0.75rem;
+            color: #6b7280;
+            margin-top: 0.5rem;
+        }
+        
+        .conversions {
+            background-color: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.25rem;
+            padding: 1rem;
+            margin-top: 1.5rem;
+        }
+        
+        .conversions h3 {
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+            color: #4b5563;
+        }
+        
+        .conversions h4 {
+            font-size: 0.85rem;
+            margin-top: 1rem;
+            margin-bottom: 0.25rem;
+            color: #4b5563;
+        }
+        
+        .conversion-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.25rem;
+            font-size: 0.75rem;
+            color: #6b7280;
+            padding-left: 0.5rem;
+        }
+        
+        .conversion-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+        
+        .conversion-text {
+            text-overflow: ellipsis;
+            overflow: hidden;
+        }
+        
+        .remove-btn, .delete-btn {
+            background-color: #ef4444;
+            color: white;
+            font-size: 0.65rem;
+            padding: 0.125rem 0.25rem;
+            margin-left: 0.25rem;
+            border-radius: 0.125rem;
+        }
+        
+        .remove-btn:hover {
+            background-color: #dc2626;
+        }
+        
+        .delete-btn {
+            background-color: #b91c1c;
+        }
+        
+        .delete-btn:hover {
+            background-color: #991b1b;
+        }
+        
+        .custom-conversions {
+            margin-top: 1rem;
+        }
+        
+        .custom-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.25rem;
+        }
+        
+        .disabled-conversions {
+            margin-top: 1rem;
+        }
+        
+        .disabled-item {
+            color: #9ca3af;
+        }
+        
+        .footer {
+            text-align: center;
+            font-size: 0.75rem;
+            color: #9ca3af;
+            margin-top: 1.5rem;
+        }
+    </style>
 </head>
-<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
-    <div id="root"></div>
+<body>
+    <div class="container">
+        <h1>Unit Conversion Calculator</h1>
+        
+        <div class="input-group">
+            <div class="input-container">
+                <label for="fromUnit">From Unit</label>
+                <input type="text" id="fromUnit" placeholder="e.g. m, ft, kg">
+                <div class="suggestions" id="fromSuggestions"></div>
+            </div>
+            
+            <div class="input-container">
+                <label for="toUnit">To Unit</label>
+                <input type="text" id="toUnit" placeholder="e.g. cm, in, lb">
+                <div class="suggestions" id="toSuggestions"></div>
+            </div>
+        </div>
+        
+        <div class="value-container">
+            <label for="inputValue">Enter Value</label>
+            <input type="text" id="inputValue" placeholder="Enter a value to convert">
+            <div class="error" id="error"></div>
+        </div>
+        
+        <button class="convert-btn" id="convertBtn">Convert</button>
+        <button class="add-btn" id="toggleAddBtn">Add New Unit Conversion</button>
+        
+        <div class="result" id="result" style="display: none;">
+            <h3>Result:</h3>
+            <div class="result-value" id="resultValue"></div>
+        </div>
+        
+        <div class="add-form" id="addForm" style="display: none;">
+            <h3>Add Custom Conversion</h3>
+            
+            <div class="add-form-inputs">
+                <input type="text" id="newUnitFrom" placeholder="Unit 1">
+                <input type="text" id="newUnitTo" placeholder="Unit 2">
+                <input type="text" id="conversionFactor" placeholder="Factor">
+            </div>
+            
+            <div class="error" id="addError"></div>
+            
+            <button class="add-btn" id="addUnitBtn">Add Conversion</button>
+            
+            <div class="add-form-help">
+                Enter the conversion factor for Unit 1 → Unit 2. 
+                For example, if 1 Unit1 = 2.54 Unit2, enter 2.54.
+            </div>
+        </div>
+        
+        <div class="conversions">
+            <h3>Available Conversions:</h3>
+            <div id="availableConversions"></div>
+            
+            <div id="customConversionsContainer" style="display: none;">
+                <h3>Custom Conversions:</h3>
+                <div id="customConversions"></div>
+            </div>
+            
+            <!-- Disabled conversions section removed as requested -->
+        </div>
+        
+        <div class="footer">
+            <p>Your custom conversions and removed conversions are saved in your browser's local storage</p>
+            <p style="margin-top: 0.25rem;">Refresh the page or come back later - your settings will be preserved</p>
+        </div>
+    </div>
 
-    <script type="text/babel">
-        const { useState, useEffect } = React;
+    <script>
+        // DOM elements
+        const fromUnitInput = document.getElementById('fromUnit');
+        const toUnitInput = document.getElementById('toUnit');
+        const inputValueInput = document.getElementById('inputValue');
+        const errorDiv = document.getElementById('error');
+        const convertBtn = document.getElementById('convertBtn');
+        const toggleAddBtn = document.getElementById('toggleAddBtn');
+        const resultDiv = document.getElementById('result');
+        const resultValueDiv = document.getElementById('resultValue');
+        const addFormDiv = document.getElementById('addForm');
+        const newUnitFromInput = document.getElementById('newUnitFrom');
+        const newUnitToInput = document.getElementById('newUnitTo');
+        const conversionFactorInput = document.getElementById('conversionFactor');
+        const addErrorDiv = document.getElementById('addError');
+        const addUnitBtn = document.getElementById('addUnitBtn');
+        const fromSuggestionsDiv = document.getElementById('fromSuggestions');
+        const toSuggestionsDiv = document.getElementById('toSuggestions');
+        const availableConversionsDiv = document.getElementById('availableConversions');
+        const customConversionsContainer = document.getElementById('customConversionsContainer');
+        const customConversionsDiv = document.getElementById('customConversions');
+        const disabledConversionsContainer = document.getElementById('disabledConversionsContainer');
+        const disabledConversionsDiv = document.getElementById('disabledConversions');
 
-        const UnitConverter = () => {
-          // Load custom conversions and disabled conversions from localStorage
-          const [customConversions, setCustomConversions] = useState(() => {
-            try {
-              const saved = localStorage.getItem('customConversions');
-              return saved ? JSON.parse(saved) : {};
-            } catch (e) {
-              return {};
-            }
-          });
-          
-          const [disabledConversions, setDisabledConversions] = useState(() => {
-            try {
-              const saved = localStorage.getItem('disabledConversions');
-              return saved ? JSON.parse(saved) : [];
-            } catch (e) {
-              return [];
-            }
-          });
-
-          const [fromUnit, setFromUnit] = useState('');
-          const [toUnit, setToUnit] = useState('');
-          const [inputValue, setInputValue] = useState('');
-          const [result, setResult] = useState('');
-          const [error, setError] = useState('');
-          const [showAddUnit, setShowAddUnit] = useState(false);
-          const [newUnitFrom, setNewUnitFrom] = useState('');
-          const [newUnitTo, setNewUnitTo] = useState('');
-          const [conversionFactor, setConversionFactor] = useState('');
-          const [addUnitError, setAddUnitError] = useState('');
-
-          // Conversion factors organized by category
-          const conversionCategories = {
+        // Conversion factors organized by category
+        const conversionCategories = {
             'Flow': {
-              'Scfm→Nm³/h': 1.699,
-              'Scfm→Sm³/h': 1.589,
-              'cfm→m³/h': 1.699,
-              'Cfm→Nm³/h': 1.699,
-              'Cfm→cm³/h': 1699000,
-              'm³/h→cfm': 0.589,
-              'Nm³/h→Scfm': 0.589,
+                'Scfm→Nm3/h': 1.699,
+                'Scfm→Sm3/h': 1.589,
+                'cfm→m3/h': 1.699,
+                'Cfm→Nm3/h': 1.699,
+                'Cfm→cm3/h': 1699000,
+                'm3/h→cfm': 0.589,
+                'Nm3/h→Scfm': 0.589,
             },
             'Temperature': {
-              'Celsius→Fahrenheit': (c) => (c * 9/5) + 32,
-              'Fahrenheit→Celsius': (f) => (f - 32) * 5/9,
-              'C→F': (c) => (c * 9/5) + 32,
-              'F→C': (f) => (f - 32) * 5/9,
+                'Celsius→Fahrenheit': (c) => (c * 9/5) + 32,
+                'Fahrenheit→Celsius': (f) => (f - 32) * 5/9,
+                'C→F': (c) => (c * 9/5) + 32,
+                'F→C': (f) => (f - 32) * 5/9,
             },
             'Length': {
-              'feet→inches': 12,
-              'feet→m': 0.3048,
-              'inches→feet': 1/12,
-              'inches→m': 0.0254,
-              'm→feet': 3.281,
-              'm→inches': 39.37,
-              'mm→inches': 0.03937,
+                'feet→inches': 12,
+                'feet→m': 0.3048,
+                'inches→feet': 1/12,
+                'inches→m': 0.0254,
+                'm→feet': 3.281,
+                'm→inches': 39.37,
+                'mm→inches': 0.03937,
             },
             'Pressure': {
-              'bar→pa': 100000,
-              'mbar→pa': 100,
-              'Pa→mbar': 0.01,
-              'atm→mbar': 1013.25,
-              'inchesWG→mbar': 2.49,
-              'pa→inWG': 0.00402,
-              'inHG→pa': 3386.39,
-              'bar→psi': 14.5038,
+                'bar→pa': 100000,
+                'mbar→pa': 100,
+                'Pa→mbar': 0.01,
+                'atm→mbar': 1013.25,
+                'inchesWG→mbar': 2.49,
+                'pa→inWG': 0.00402,
+                'inHG→pa': 3386.39,
+                'bar→psi': 14.5038,
             },
             'Mass & Concentration': {
-              'lb/h→kg/h': 0.4536,
-              'mg/Nm³→grains/dscf': 0.437,
-              'kg/m³→lb/ft³': 0.06243,
+                'lb/h→kg/h': 0.4536,
+                'mg/Nm3→grains/dscf': 0.437,
+                'kg/m3→lb/ft3': 0.06243,
             },
             'Power': {
-              'kW→hp': 1.341,
-              'hp→kW': 0.7457,
+                'kW→hp': 1.341,
+                'hp→kW': 0.7457,
             },
             'Velocity & Volume': {
-              'ft/min→m/s': 0.00508,
-              'm³→ft³': 35.3147
+                'ft/min→m/s': 0.00508,
+                'm3→ft3': 35.3147
             }
-          };
-          
-          // Flatten the categorized conversions for easier lookup
-          const conversionFactors = Object.entries(conversionCategories).reduce((acc, [category, factors]) => {
-            Object.entries(factors).forEach(([key, value]) => {
-              acc[key] = value;
+        };
+
+        // Flatten the categorized conversions for easier lookup
+        const conversionFactors = {};
+        for (const [category, factors] of Object.entries(conversionCategories)) {
+            for (const [key, value] of Object.entries(factors)) {
+                conversionFactors[key] = value;
+            }
+        }
+
+        // Load custom conversions from localStorage
+        let customConversions = {};
+        try {
+            const saved = localStorage.getItem('customConversions');
+            if (saved) {
+                customConversions = JSON.parse(saved);
+            }
+        } catch (e) {
+            console.error('Error loading custom conversions:', e);
+        }
+
+        // Load disabled conversions from localStorage
+        let disabledConversions = [];
+        try {
+            const saved = localStorage.getItem('disabledConversions');
+            if (saved) {
+                disabledConversions = JSON.parse(saved);
+            }
+        } catch (e) {
+            console.error('Error loading disabled conversions:', e);
+        }
+
+        // Initialize units with proper exponents
+        const exponentMap = {
+            '2': '²',
+            '3': '³'
+        };
+        
+        // Helper function to format units with proper exponents
+        function formatUnit(unit) {
+            // Replace number 2 or 3 after letters with superscript ² or ³
+            return unit.replace(/([a-zA-Z])([23])/g, (match, letter, exponent) => {
+                return letter + exponentMap[exponent];
             });
-            return acc;
-          }, {});
+        }
+        
+        // Helper function to normalize units for internal lookups
+        function normalizeUnit(unit) {
+            // Replace superscript ² or ³ with regular 2 or 3 for internal lookup
+            return unit.replace(/([a-zA-Z])[²³]/g, (match, letter, exponent) => {
+                if (match.includes('²')) return letter + '2';
+                if (match.includes('³')) return letter + '3';
+                return match;
+            });
+        }
 
-          // Save to localStorage whenever custom conversions or disabled conversions change
-          useEffect(() => {
-            localStorage.setItem('customConversions', JSON.stringify(customConversions));
-          }, [customConversions]);
-          
-          useEffect(() => {
+        // Helper function to display unit with proper formatting
+        function displayUnit(unit) {
+            return formatUnit(unit);
+        }
+
+        // Helper function to save disabled conversions to localStorage
+        function saveDisabledConversions() {
             localStorage.setItem('disabledConversions', JSON.stringify(disabledConversions));
-          }, [disabledConversions]);
+            updateConversionsList();
+            updateUnitSuggestions();
+        }
 
-          // All available units from both built-in (non-disabled) and custom conversion factors
-          const allUnits = [...new Set([
-            ...Object.keys(conversionFactors)
-              .filter(key => !disabledConversions.includes(key))
-              .map(key => key.split('→')[0]),
-            ...Object.keys(conversionFactors)
-              .filter(key => !disabledConversions.includes(key))
-              .map(key => key.split('→')[1]),
-            ...Object.keys(customConversions).map(key => key.split('→')[0]),
-            ...Object.keys(customConversions).map(key => key.split('→')[1])
-          ])];
-          
-          // Helper function to get autocomplete suggestions
-          const getSuggestions = (input) => {
+        // Helper function to get all available units
+        function getAllUnits() {
+            const units = new Set();
+            
+            // Add units from built-in conversions (not disabled)
+            for (const key in conversionFactors) {
+                if (!disabledConversions.includes(key)) {
+                    const [from, to] = key.split('→');
+                    units.add(from);
+                    units.add(to);
+                }
+            }
+            
+            // Add units from custom conversions
+            for (const key in customConversions) {
+                const [from, to] = key.split('→');
+                units.add(from);
+                units.add(to);
+            }
+            
+            return [...units];
+        }
+
+        // Helper function to get suggestions for a unit
+        function getSuggestions(input) {
             if (!input) return [];
             const lowerInput = input.toLowerCase();
+            const allUnits = getAllUnits();
             return allUnits
-              .filter(unit => unit.toLowerCase().includes(lowerInput))
-              .slice(0, 5); // Limit to 5 suggestions
-          };
+                .filter(unit => unit.toLowerCase().includes(lowerInput))
+                .slice(0, 5); // Limit to 5 suggestions
+        }
 
-          // Add new custom unit conversion
-          const handleAddUnit = () => {
-            if (!newUnitFrom || !newUnitTo || !conversionFactor) {
-              setAddUnitError('Please fill all fields');
-              return;
+        // Update the list of available conversions
+        function updateConversionsList() {
+            // Clear existing content
+            availableConversionsDiv.innerHTML = '';
+            
+            // Add built-in conversions by category
+            for (const [category, factors] of Object.entries(conversionCategories)) {
+                // Get all conversion keys for this category that aren't disabled
+                const categoryKeys = Object.keys(factors).filter(key => !disabledConversions.includes(key));
+                
+                // Skip categories with no active conversions
+                if (categoryKeys.length === 0) continue;
+                
+                const categoryDiv = document.createElement('div');
+                categoryDiv.innerHTML = `<h4>${category}:</h4>`;
+                
+                const gridDiv = document.createElement('div');
+                gridDiv.className = 'conversion-grid';
+                
+                for (const key of categoryKeys) {
+                    const [from, to] = key.split('→');
+                    
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'conversion-item';
+                    itemDiv.innerHTML = `
+                        <span class="conversion-text">${from} → ${to}</span>
+                        <button class="remove-btn" data-key="${key}">Remove</button>
+                    `;
+                    
+                    gridDiv.appendChild(itemDiv);
+                }
+                
+                categoryDiv.appendChild(gridDiv);
+                availableConversionsDiv.appendChild(categoryDiv);
             }
             
-            if (isNaN(Number(conversionFactor))) {
-              setAddUnitError('Conversion factor must be a number');
-              return;
+            // Add event listeners to remove buttons
+            const removeButtons = document.querySelectorAll('.remove-btn');
+            removeButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const key = this.getAttribute('data-key');
+                    disabledConversions.push(key);
+                    saveDisabledConversions();
+                });
+            });
+            
+            // Update custom conversions section
+            if (Object.keys(customConversions).length > 0) {
+                customConversionsContainer.style.display = 'block';
+                customConversionsDiv.innerHTML = '';
+                
+                for (const [key, value] of Object.entries(customConversions)) {
+                    const [from, to] = key.split('→');
+                    
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'custom-item';
+                    itemDiv.innerHTML = `
+                        <span class="conversion-text">${displayUnit(from)} → ${displayUnit(to)} (${value})</span>
+                        <button class="remove-btn" data-key="${key}">Delete</button>
+                    `;
+                    
+                    customConversionsDiv.appendChild(itemDiv);
+                }
+                
+                // Add event listeners to delete buttons
+                const deleteButtons = customConversionsDiv.querySelectorAll('.remove-btn');
+                deleteButtons.forEach(button => {
+                    button.addEventListener('click', function() {
+                        const key = this.getAttribute('data-key');
+                        delete customConversions[key];
+                        saveCustomConversions();
+                    });
+                });
+            } else {
+                customConversionsContainer.style.display = 'none';
             }
             
-            const key = `${newUnitFrom}→${newUnitTo}`;
-            
-            // Add the new conversion factor and save to localStorage
-            const newCustomConversions = {
-              ...customConversions,
-              [key]: parseFloat(conversionFactor)
-            };
-            setCustomConversions(newCustomConversions);
-            
-            // Reset fields
-            setNewUnitFrom('');
-            setNewUnitTo('');
-            setConversionFactor('');
-            setAddUnitError('');
-          };
+            // We're not showing disabled conversions as requested
+            disabledConversionsContainer.style.display = 'none';
+        }
 
-          // Delete a custom conversion
-          const handleDeleteCustom = (key) => {
-            const newCustomConversions = { ...customConversions };
-            delete newCustomConversions[key];
-            setCustomConversions(newCustomConversions);
-          };
-          
-          // Permanently disable a built-in conversion
-          const handleDisableBuiltIn = (key) => {
-            const newDisabled = [...disabledConversions, key];
-            setDisabledConversions(newDisabled);
-          };
-          
-          // Remove a conversion completely (from disabled list)
-          const handleRemovePermanently = (key) => {
-            setDisabledConversions(disabledConversions.filter(k => k !== key));
-          };
+        // Update unit suggestions based on input
+        function updateUnitSuggestions() {
+            fromSuggestionsDiv.innerHTML = '';
+            toSuggestionsDiv.innerHTML = '';
+            
+            const fromSuggestions = getSuggestions(fromUnitInput.value);
+            const toSuggestions = getSuggestions(toUnitInput.value);
+            
+            fromSuggestions.forEach(unit => {
+                const suggestionBtn = document.createElement('div');
+                suggestionBtn.className = 'suggestion';
+                suggestionBtn.textContent = unit;
+                suggestionBtn.addEventListener('click', () => {
+                    fromUnitInput.value = unit;
+                    updateUnitSuggestions();
+                });
+                fromSuggestionsDiv.appendChild(suggestionBtn);
+            });
+            
+            toSuggestions.forEach(unit => {
+                const suggestionBtn = document.createElement('div');
+                suggestionBtn.className = 'suggestion';
+                suggestionBtn.textContent = unit;
+                suggestionBtn.addEventListener('click', () => {
+                    toUnitInput.value = unit;
+                    updateUnitSuggestions();
+                });
+                toSuggestionsDiv.appendChild(suggestionBtn);
+            });
+        }
 
-          const handleConvert = () => {
+        // Convert units
+        function convertUnits() {
+            const fromUnit = fromUnitInput.value;
+            const toUnit = toUnitInput.value;
+            const inputValue = inputValueInput.value;
+            
             if (!inputValue || isNaN(Number(inputValue))) {
-              setError('Please enter a valid number');
-              setResult('');
-              return;
+                errorDiv.textContent = 'Please enter a valid number';
+                resultDiv.style.display = 'none';
+                return;
             }
-
+            
             if (!fromUnit || !toUnit) {
-              setError('Please specify both units');
-              setResult('');
-              return;
+                errorDiv.textContent = 'Please specify both units';
+                resultDiv.style.display = 'none';
+                return;
             }
-
-            setError('');
+            
+            errorDiv.textContent = '';
             const value = parseFloat(inputValue);
             const key = `${fromUnit}→${toUnit}`;
             const reverseKey = `${toUnit}→${fromUnit}`;
             
+            let result;
+            
             // First check custom conversions
             if (customConversions[key]) {
-              setResult((value * customConversions[key]).toFixed(4));
-              return;
+                result = (value * customConversions[key]).toFixed(4);
             } else if (customConversions[reverseKey]) {
-              setResult((value / customConversions[reverseKey]).toFixed(4));
-              return;
+                result = (value / customConversions[reverseKey]).toFixed(4);
             }
-
             // Then check built-in conversions (but skip disabled ones)
-            if (conversionFactors[key] && !disabledConversions.includes(key)) {
-              if (typeof conversionFactors[key] === 'function') {
-                setResult(conversionFactors[key](value).toFixed(4));
-              } else {
-                setResult((value * conversionFactors[key]).toFixed(4));
-              }
-            } else if (conversionFactors[reverseKey] && !disabledConversions.includes(reverseKey)) {
-              if (typeof conversionFactors[reverseKey] === 'function') {
-                // For function-based conversions like temperature, we need a reverse function
-                if (key === 'Fahrenheit→Celsius' || key === 'F→C') {
-                  setResult(((value - 32) * 5/9).toFixed(4));
-                } else if (key === 'Celsius→Fahrenheit' || key === 'C→F') {
-                  setResult(((value * 9/5) + 32).toFixed(4));
+            else if (conversionFactors[key] && !disabledConversions.includes(key)) {
+                if (typeof conversionFactors[key] === 'function') {
+                    result = conversionFactors[key](value).toFixed(4);
                 } else {
-                  setResult((value / conversionFactors[reverseKey]).toFixed(4));
+                    result = (value * conversionFactors[key]).toFixed(4);
                 }
-              } else {
-                setResult((value / conversionFactors[reverseKey]).toFixed(4));
-              }
+            } else if (conversionFactors[reverseKey] && !disabledConversions.includes(reverseKey)) {
+                if (typeof conversionFactors[reverseKey] === 'function') {
+                    // For function-based conversions like temperature, we need a reverse function
+                    if (key === 'Fahrenheit→Celsius' || key === 'F→C') {
+                        result = ((value - 32) * 5/9).toFixed(4);
+                    } else if (key === 'Celsius→Fahrenheit' || key === 'C→F') {
+                        result = ((value * 9/5) + 32).toFixed(4);
+                    } else {
+                        result = (value / conversionFactors[reverseKey]).toFixed(4);
+                    }
+                } else {
+                    result = (value / conversionFactors[reverseKey]).toFixed(4);
+                }
             } else if (fromUnit === toUnit) {
-              setResult(value.toString());
+                result = value.toString();
             } else {
-              setError('Conversion not available between these units');
-              setResult('');
+                errorDiv.textContent = 'Conversion not available between these units';
+                resultDiv.style.display = 'none';
+                return;
             }
-          };
+            
+            resultValueDiv.textContent = `${inputValue} ${displayUnit(fromUnit)} = ${result} ${displayUnit(toUnit)}`;
+            resultDiv.style.display = 'block';
+        }
 
-          return (
-            <div className="flex flex-col items-center w-full max-w-md p-4 mx-auto bg-white rounded-lg shadow-md">
-              <h1 className="mb-6 text-xl font-bold text-center">Unit Conversion Calculator</h1>
-              
-              <div className="flex w-full mb-4 space-x-4">
-                {/* From Unit */}
-                <div className="w-1/2">
-                  <label className="block mb-2 font-medium text-gray-700">From Unit</label>
-                  <input 
-                    type="text" 
-                    className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={fromUnit}
-                    onChange={(e) => setFromUnit(e.target.value)}
-                    placeholder="e.g. m, ft, kg"
-                    list="fromUnits"
-                  />
-                  <datalist id="fromUnits">
-                    {getSuggestions(fromUnit).map(unit => (
-                      <option key={`from-${unit}`} value={unit} />
-                    ))}
-                  </datalist>
-                  <div className="mt-1 text-xs">
-                    {getSuggestions(fromUnit).map(unit => (
-                      <button 
-                        key={`from-btn-${unit}`}
-                        className="mr-1 mb-1 px-2 py-1 bg-gray-200 rounded-md text-gray-700 hover:bg-gray-300"
-                        onClick={() => setFromUnit(unit)}
-                      >
-                        {unit}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                
-                {/* To Unit */}
-                <div className="w-1/2">
-                  <label className="block mb-2 font-medium text-gray-700">To Unit</label>
-                  <input 
-                    type="text" 
-                    className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={toUnit}
-                    onChange={(e) => setToUnit(e.target.value)}
-                    placeholder="e.g. cm, in, lb"
-                    list="toUnits"
-                  />
-                  <datalist id="toUnits">
-                    {getSuggestions(toUnit).map(unit => (
-                      <option key={`to-${unit}`} value={unit} />
-                    ))}
-                  </datalist>
-                  <div className="mt-1 text-xs">
-                    {getSuggestions(toUnit).map(unit => (
-                      <button 
-                        key={`to-btn-${unit}`}
-                        className="mr-1 mb-1 px-2 py-1 bg-gray-200 rounded-md text-gray-700 hover:bg-gray-300"
-                        onClick={() => setToUnit(unit)}
-                      >
-                        {unit}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-              
-              {/* Input Value */}
-              <div className="w-full mb-4">
-                <label className="block mb-2 font-medium text-gray-700">Enter Value</label>
-                <input 
-                  type="text" 
-                  className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
-                  placeholder="Enter a value to convert"
-                />
-                {error && <p className="mt-1 text-sm text-red-500">{error}</p>}
-              </div>
-              
-              {/* Convert Button */}
-              <button 
-                className="w-full p-2 mb-4 font-medium text-white bg-blue-500 rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                onClick={handleConvert}
-              >
-                Convert
-              </button>
-              
-              {/* Add New Unit Button */}
-              <button 
-                className="w-full p-2 mb-4 font-medium text-white bg-green-500 rounded hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500"
-                onClick={() => setShowAddUnit(prev => !prev)}
-              >
-                {showAddUnit ? 'Hide' : 'Add New Unit Conversion'}
-              </button>
-              
-              {/* Result */}
-              {result && (
-                <div className="w-full p-4 border rounded bg-gray-50">
-                  <h2 className="mb-2 font-medium text-gray-700">Result:</h2>
-                  <div className="text-lg font-bold">
-                    {inputValue} {fromUnit} = {result} {toUnit}
-                  </div>
-                </div>
-              )}
-              
-              {/* Add New Unit Form */}
-              {showAddUnit && (
-                <div className="w-full p-4 mb-4 border rounded bg-gray-50">
-                  <h2 className="mb-2 font-medium text-gray-700">Add Custom Conversion</h2>
-                  
-                  <div className="flex mb-3 space-x-2">
-                    <div className="w-1/3">
-                      <input 
-                        type="text" 
-                        className="w-full p-2 border rounded focus:outline-none focus:ring-1 focus:ring-green-500" 
-                        placeholder="Unit 1"
-                        value={newUnitFrom}
-                        onChange={(e) => setNewUnitFrom(e.target.value)}
-                      />
-                    </div>
-                    <div className="w-1/3">
-                      <input 
-                        type="text" 
-                        className="w-full p-2 border rounded focus:outline-none focus:ring-1 focus:ring-green-500" 
-                        placeholder="Unit 2"
-                        value={newUnitTo}
-                        onChange={(e) => setNewUnitTo(e.target.value)}
-                      />
-                    </div>
-                    <div className="w-1/3">
-                      <input 
-                        type="text" 
-                        className="w-full p-2 border rounded focus:outline-none focus:ring-1 focus:ring-green-500" 
-                        placeholder="Factor"
-                        value={conversionFactor}
-                        onChange={(e) => setConversionFactor(e.target.value)}
-                      />
-                    </div>
-                  </div>
-                  
-                  {addUnitError && <p className="mb-2 text-sm text-red-500">{addUnitError}</p>}
-                  
-                  <button 
-                    className="w-full p-2 font-medium text-white bg-green-500 rounded hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500"
-                    onClick={handleAddUnit}
-                  >
-                    Add Conversion
-                  </button>
-                  
-                  <p className="mt-2 text-xs text-gray-600">
-                    Enter the conversion factor for Unit 1 → Unit 2. 
-                    For example, if 1 Unit1 = 2.54 Unit2, enter 2.54.
-                  </p>
-                </div>
-              )}
-              
-              {/* Available Conversions Reference */}
-              <div className="w-full mt-6 p-4 border rounded bg-gray-50">
-                <h3 className="mb-2 font-medium text-gray-700">Available Conversions:</h3>
-                
-                {/* Built-in conversions by category */}
-                <div className="text-xs text-gray-600">
-                  {Object.entries(conversionCategories).map(([category, factors]) => {
-                    // Get all conversion keys for this category that aren't disabled
-                    const categoryKeys = Object.keys(factors).filter(key => !disabledConversions.includes(key));
-                    
-                    // Skip categories with no active conversions
-                    if (categoryKeys.length === 0) return null;
-                    
-                    return (
-                      <div key={category} className="mb-4">
-                        <h4 className="font-medium text-sm mb-1 text-gray-700">{category}:</h4>
-                        <div className="grid grid-cols-2 gap-1 pl-2">
-                          {categoryKeys.map(key => {
-                            const [from, to] = key.split('→');
-                            return (
-                              <div key={key} className="flex justify-between items-center whitespace-nowrap overflow-hidden">
-                                <span className="text-ellipsis">{from} → {to}</span>
-                                <button 
-                                  className="ml-1 px-1 py-0.5 text-xs text-white bg-red-500 rounded hover:bg-red-600"
-                                  onClick={() => handleDisableBuiltIn(key)}
-                                >
-                                  Remove
-                                </button>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-                
-                {/* Custom conversions */}
-                {Object.keys(customConversions).length > 0 && (
-                  <>
-                    <h3 className="mt-4 mb-2 font-medium text-gray-700">Custom Conversions:</h3>
-                    <div className="text-xs text-gray-600">
-                      {Object.keys(customConversions).map(key => {
-                        const [from, to] = key.split('→');
-                        return (
-                          <div key={key} className="flex justify-between items-center mb-1">
-                            <div className="whitespace-nowrap overflow-hidden text-ellipsis">
-                              {from} → {to} ({customConversions[key]})
-                            </div>
-                            <button 
-                              className="ml-2 px-2 py-1 text-xs text-white bg-red-500 rounded hover:bg-red-600"
-                              onClick={() => handleDeleteCustom(key)}
-                            >
-                              Delete
-                            </button>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </>
-                )}
-                
-                {/* Disabled built-in conversions by category */}
-                {disabledConversions.length > 0 && (
-                  <>
-                    <h3 className="mt-4 mb-2 font-medium text-gray-700">Disabled Conversions:</h3>
-                    <div className="text-xs text-gray-600">
-                      {Object.entries(conversionCategories).map(([category, factors]) => {
-                        // Get all disabled conversion keys for this category
-                        const disabledCategoryKeys = Object.keys(factors).filter(key => disabledConversions.includes(key));
-                        
-                        // Skip categories with no disabled conversions
-                        if (disabledCategoryKeys.length === 0) return null;
-                        
-                        return (
-                          <div key={`disabled-${category}`} className="mb-2">
-                            <h4 className="font-medium text-sm mb-1 text-gray-500">{category}:</h4>
-                            <div className="grid grid-cols-2 gap-1 pl-2">
-                              {disabledCategoryKeys.map(key => {
-                                const [from, to] = key.split('→');
-                                return (
-                                  <div key={key} className="flex justify-between items-center whitespace-nowrap overflow-hidden">
-                                    <span className="text-ellipsis text-gray-400">{from} → {to}</span>
-                                    <button 
-                                      className="ml-1 px-1 py-0.5 text-xs text-white bg-red-700 rounded hover:bg-red-800"
-                                      onClick={() => handleRemovePermanently(key)}
-                                    >
-                                      Delete Forever
-                                    </button>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </>
-                )}
-              </div>
-              
-              <div className="w-full mt-6 text-center text-xs text-gray-500">
-                <p>Your custom conversions and removed conversions are saved in your browser's local storage</p>
-                <p className="mt-1">
-                  Refresh the page or come back later - your settings will be preserved
-                </p>
-              </div>
-            </div>
-          );
-        };
+        // Add a new custom conversion
+        function addCustomConversion() {
+            const fromUnit = newUnitFromInput.value;
+            const toUnit = newUnitToInput.value;
+            const factor = conversionFactorInput.value;
+            
+            // Normalize the units for internal storage
+            const normalizedFromUnit = normalizeUnit(fromUnit);
+            const normalizedToUnit = normalizeUnit(toUnit);
+            
+            if (!fromUnit || !toUnit || !factor) {
+                addErrorDiv.textContent = 'Please fill all fields';
+                return;
+            }
+            
+            if (isNaN(Number(factor))) {
+                addErrorDiv.textContent = 'Conversion factor must be a number';
+                return;
+            }
+            
+            const key = `${normalizedFromUnit}→${normalizedToUnit}`;
+            
+            // Add the new conversion factor
+            customConversions[key] = parseFloat(factor);
+            
+            // Save to localStorage
+            saveCustomConversions();
+            
+            // Reset fields
+            newUnitFromInput.value = '';
+            newUnitToInput.value = '';
+            conversionFactorInput.value = '';
+            addErrorDiv.textContent = '';
+        }
 
-        ReactDOM.render(<UnitConverter />, document.getElementById('root'));
+        // Toggle the Add Form display
+        function toggleAddForm() {
+            if (addFormDiv.style.display === 'none') {
+                addFormDiv.style.display = 'block';
+                toggleAddBtn.textContent = 'Hide';
+            } else {
+                addFormDiv.style.display = 'none';
+                toggleAddBtn.textContent = 'Add New Unit Conversion';
+            }
+        }
+
+        // Event Listeners
+        convertBtn.addEventListener('click', convertUnits);
+        toggleAddBtn.addEventListener('click', toggleAddForm);
+        addUnitBtn.addEventListener('click', addCustomConversion);
+        
+        fromUnitInput.addEventListener('input', updateUnitSuggestions);
+        toUnitInput.addEventListener('input', updateUnitSuggestions);
+        
+        // Initialize conversions list and suggestions
+        updateConversionsList();
+        updateUnitSuggestions();
     </script>
 </body>
 </html>
