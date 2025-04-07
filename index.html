@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unit Converter</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        const UnitConverter = () => {
+          const [fromUnit, setFromUnit] = useState('');
+          const [toUnit, setToUnit] = useState('');
+          const [inputValue, setInputValue] = useState('');
+          const [result, setResult] = useState('');
+          const [error, setError] = useState('');
+          const [showAddUnit, setShowAddUnit] = useState(false);
+          const [newUnitFrom, setNewUnitFrom] = useState('');
+          const [newUnitTo, setNewUnitTo] = useState('');
+          const [conversionFactor, setConversionFactor] = useState('');
+          const [addUnitError, setAddUnitError] = useState('');
+          const [customConversions, setCustomConversions] = useState(() => {
+            // Load custom conversions from localStorage
+            const saved = localStorage.getItem('customConversions');
+            return saved ? JSON.parse(saved) : {};
+          });
+
+          // Save custom conversions to localStorage whenever they change
+          useEffect(() => {
+            localStorage.setItem('customConversions', JSON.stringify(customConversions));
+          }, [customConversions]);
+
+          // Conversion factors based on the image
+          const conversionFactors = {
+            // Flow
+            'Scfm→Nm³/h': 1.699,
+            'Scfm→Sm³/h': 1.589,
+            'cfm→m³/h': 1.699,
+            'Cfm→Nm³/h': 1.699,
+            'Cfm→cm³/h': 1699000,
+            'm³/h→cfm': 0.589,
+            'Nm³/h→Scfm': 0.589,
+            
+            // Temperature
+            'Celsius→Fahrenheit': (c) => (c * 9/5) + 32,
+            'Fahrenheit→Celsius': (f) => (f - 32) * 5/9,
+            'C→F': (c) => (c * 9/5) + 32,
+            'F→C': (f) => (f - 32) * 5/9,
+            
+            // Length
+            'feet→inches': 12,
+            'feet→m': 0.3048,
+            'inches→feet': 1/12,
+            'inches→m': 0.0254,
+            'm→feet': 3.281,
+            'm→inches': 39.37,
+            'mm→inches': 0.03937,
+            
+            // Pressure
+            'bar→pa': 100000,
+            'mbar→pa': 100,
+            'Pa→mbar': 0.01,
+            'atm→mbar': 1013.25,
+            'inchesWG→mbar': 2.49,
+            'pa→inWG': 0.00402,
+            'inHG→pa': 3386.39,
+            'bar→psi': 14.5038,
+            
+            // Exhaust gas stream
+            'lb/h→kg/h': 0.4536,
+            'mg/Nm³→grains/dscf': 0.437,
+            'kg/m³→lb/ft³': 0.06243,
+            
+            // Power
+            'kW→hp': 1.341,
+            'hp→kW': 0.7457,
+            
+            // Velocity
+            'ft/min→m/s': 0.00508,
+            'm³→ft³': 35.3147
+          };
+
+          // All available units from both built-in and custom conversion factors
+          const allUnits = [...new Set([
+            ...Object.keys(conversionFactors).map(key => key.split('→')[0]),
+            ...Object.keys(conversionFactors).map(key => key.split('→')[1]),
+            ...Object.keys(customConversions).map(key => key.split('→')[0]),
+            ...Object.keys(customConversions).map(key => key.split('→')[1])
+          ])];
+          
+          // Helper function to get autocomplete suggestions
+          const getSuggestions = (input) => {
+            if (!input) return [];
+            const lowerInput = input.toLowerCase();
+            return allUnits
+              .filter(unit => unit.toLowerCase().includes(lowerInput))
+              .slice(0, 5); // Limit to 5 suggestions
+          };
+
+          // Add new custom unit conversion
+          const handleAddUnit = () => {
+            if (!newUnitFrom || !newUnitTo || !conversionFactor) {
+              setAddUnitError('Please fill all fields');
+              return;
+            }
+            
+            if (isNaN(Number(conversionFactor))) {
+              setAddUnitError('Conversion factor must be a number');
+              return;
+            }
+            
+            const key = `${newUnitFrom}→${newUnitTo}`;
+            
+            // Add the new conversion factor
+            setCustomConversions({
+              ...customConversions,
+              [key]: parseFloat(conversionFactor)
+            });
+            
+            // Reset fields
+            setNewUnitFrom('');
+            setNewUnitTo('');
+            setConversionFactor('');
+            setAddUnitError('');
+          };
+
+          // Delete a custom conversion
+          const handleDeleteCustom = (key) => {
+            const newCustomConversions = { ...customConversions };
+            delete newCustomConversions[key];
+            setCustomConversions(newCustomConversions);
+          };
+
+          const handleConvert = () => {
+            if (!inputValue || isNaN(Number(inputValue))) {
+              setError('Please enter a valid number');
+              setResult('');
+              return;
+            }
+
+            if (!fromUnit || !toUnit) {
+              setError('Please specify both units');
+              setResult('');
+              return;
+            }
+
+            setError('');
+            const value = parseFloat(inputValue);
+            const key = `${fromUnit}→${toUnit}`;
+            const reverseKey = `${toUnit}→${fromUnit}`;
+            
+            // First check custom conversions
+            if (customConversions[key]) {
+              setResult((value * customConversions[key]).toFixed(4));
+              return;
+            } else if (customConversions[reverseKey]) {
+              setResult((value / customConversions[reverseKey]).toFixed(4));
+              return;
+            }
+
+            // Then check built-in conversions
+            if (conversionFactors[key]) {
+              if (typeof conversionFactors[key] === 'function') {
+                setResult(conversionFactors[key](value).toFixed(4));
+              } else {
+                setResult((value * conversionFactors[key]).toFixed(4));
+              }
+            } else if (conversionFactors[reverseKey]) {
+              if (typeof conversionFactors[reverseKey] === 'function') {
+                // For function-based conversions like temperature, we need a reverse function
+                if (key === 'Fahrenheit→Celsius' || key === 'F→C') {
+                  setResult(((value - 32) * 5/9).toFixed(4));
+                } else if (key === 'Celsius→Fahrenheit' || key === 'C→F') {
+                  setResult(((value * 9/5) + 32).toFixed(4));
+                } else {
+                  setResult((value / conversionFactors[reverseKey]).toFixed(4));
+                }
+              } else {
+                setResult((value / conversionFactors[reverseKey]).toFixed(4));
+              }
+            } else if (fromUnit === toUnit) {
+              setResult(value.toString());
+            } else {
+              setError('Conversion not available between these units');
+              setResult('');
+            }
+          };
+
+          return (
+            <div className="flex flex-col items-center w-full max-w-md p-4 mx-auto bg-white rounded-lg shadow-md">
+              <h1 className="mb-6 text-xl font-bold text-center">Unit Conversion Calculator</h1>
+              
+              <div className="flex w-full mb-4 space-x-4">
+                {/* From Unit */}
+                <div className="w-1/2">
+                  <label className="block mb-2 font-medium text-gray-700">From Unit</label>
+                  <input 
+                    type="text" 
+                    className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={fromUnit}
+                    onChange={(e) => setFromUnit(e.target.value)}
+                    placeholder="e.g. m, ft, kg"
+                    list="fromUnits"
+                  />
+                  <datalist id="fromUnits">
+                    {getSuggestions(fromUnit).map(unit => (
+                      <option key={`from-${unit}`} value={unit} />
+                    ))}
+                  </datalist>
+                </div>
+                
+                {/* To Unit */}
+                <div className="w-1/2">
+                  <label className="block mb-2 font-medium text-gray-700">To Unit</label>
+                  <input 
+                    type="text" 
+                    className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={toUnit}
+                    onChange={(e) => setToUnit(e.target.value)}
+                    placeholder="e.g. cm, in, lb"
+                    list="toUnits"
+                  />
+                  <datalist id="toUnits">
+                    {getSuggestions(toUnit).map(unit => (
+                      <option key={`to-${unit}`} value={unit} />
+                    ))}
+                  </datalist>
+                </div>
+              </div>
+              
+              {/* Input Value */}
+              <div className="w-full mb-4">
+                <label className="block mb-2 font-medium text-gray-700">Enter Value</label>
+                <input 
+                  type="text" 
+                  className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  placeholder="Enter a value to convert"
+                />
+                {error && <p className="mt-1 text-sm text-red-500">{error}</p>}
+              </div>
+              
+              {/* Convert Button */}
+              <button 
+                className="w-full p-2 mb-4 font-medium text-white bg-blue-500 rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                onClick={handleConvert}
+              >
+                Convert
+              </button>
+              
+              {/* Add New Unit Button */}
+              <button 
+                className="w-full p-2 mb-4 font-medium text-white bg-green-500 rounded hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500"
+                onClick={() => setShowAddUnit(prev => !prev)}
+              >
+                {showAddUnit ? 'Hide' : 'Add New Unit Conversion'}
+              </button>
+              
+              {/* Result */}
+              {result && (
+                <div className="w-full p-4 border rounded bg-gray-50">
+                  <h2 className="mb-2 font-medium text-gray-700">Result:</h2>
+                  <div className="text-lg font-bold">
+                    {inputValue} {fromUnit} = {result} {toUnit}
+                  </div>
+                </div>
+              )}
+              
+              {/* Add New Unit Form */}
+              {showAddUnit && (
+                <div className="w-full p-4 mb-4 border rounded bg-gray-50">
+                  <h2 className="mb-2 font-medium text-gray-700">Add Custom Conversion</h2>
+                  
+                  <div className="flex mb-3 space-x-2">
+                    <div className="w-1/3">
+                      <input 
+                        type="text" 
+                        className="w-full p-2 border rounded focus:outline-none focus:ring-1 focus:ring-green-500" 
+                        placeholder="Unit 1"
+                        value={newUnitFrom}
+                        onChange={(e) => setNewUnitFrom(e.target.value)}
+                      />
+                    </div>
+                    <div className="w-1/3">
+                      <input 
+                        type="text" 
+                        className="w-full p-2 border rounded focus:outline-none focus:ring-1 focus:ring-green-500" 
+                        placeholder="Unit 2"
+                        value={newUnitTo}
+                        onChange={(e) => setNewUnitTo(e.target.value)}
+                      />
+                    </div>
+                    <div className="w-1/3">
+                      <input 
+                        type="text" 
+                        className="w-full p-2 border rounded focus:outline-none focus:ring-1 focus:ring-green-500" 
+                        placeholder="Conversion Factor"
+                        value={conversionFactor}
+                        onChange={(e) => setConversionFactor(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  
+                  {addUnitError && <p className="mb-2 text-sm text-red-500">{addUnitError}</p>}
+                  
+                  <button 
+                    className="w-full p-2 font-medium text-white bg-green-500 rounded hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500"
+                    onClick={handleAddUnit}
+                  >
+                    Add Conversion
+                  </button>
+                  
+                  <p className="mt-2 text-xs text-gray-600">
+                    Enter the conversion factor for Unit 1 → Unit 2. 
+                    For example, if 1 Unit1 = 2.54 Unit2, enter 2.54.
+                  </p>
+                </div>
+              )}
+              
+              {/* Available Conversions Reference */}
+              <div className="w-full mt-6 p-4 border rounded bg-gray-50">
+                <h3 className="mb-2 font-medium text-gray-700">Available Conversions:</h3>
+                
+                {/* Built-in conversions */}
+                <div className="text-xs text-gray-600 grid grid-cols-2 gap-1">
+                  {Object.keys(conversionFactors).map(key => {
+                    const [from, to] = key.split('→');
+                    return (
+                      <div key={key} className="whitespace-nowrap overflow-hidden text-ellipsis">
+                        {from} → {to}
+                      </div>
+                    );
+                  })}
+                </div>
+                
+                {/* Custom conversions */}
+                {Object.keys(customConversions).length > 0 && (
+                  <>
+                    <h3 className="mt-4 mb-2 font-medium text-gray-700">Custom Conversions:</h3>
+                    <div className="text-xs text-gray-600">
+                      {Object.keys(customConversions).map(key => {
+                        const [from, to] = key.split('→');
+                        return (
+                          <div key={key} className="flex justify-between items-center mb-1">
+                            <div className="whitespace-nowrap overflow-hidden text-ellipsis">
+                              {from} → {to} ({customConversions[key]})
+                            </div>
+                            <button 
+                              className="ml-2 px-2 py-1 text-xs text-white bg-red-500 rounded hover:bg-red-600"
+                              onClick={() => handleDeleteCustom(key)}
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
+              </div>
+              
+              <div className="w-full mt-6 text-center text-xs text-gray-500">
+                <p>Data is saved in your browser's local storage.</p>
+                <p className="mt-1">
+                  Created by <a href="https://github.com/yourusername" className="text-blue-500 hover:underline" target="_blank">your GitHub username</a>
+                </p>
+              </div>
+            </div>
+          );
+        };
+
+        ReactDOM.render(<UnitConverter />, document.getElementById('root'));
+    </script>
+</body>
+</html>
